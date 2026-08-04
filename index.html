@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hoya Wordle &mdash; A Georgetown Law Word Game</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="app-header">
+  <button class="icon-btn" id="help-btn" title="How to play" aria-label="How to play">?</button>
+  <h1>HOYA <span class="accent">WORDLE</span></h1>
+  <div class="header-actions">
+    <button class="icon-btn" id="stats-btn" title="Statistics" aria-label="Statistics">&#128202;</button>
+    <button class="icon-btn" id="new-btn" title="New practice word" aria-label="New practice word">&#8635;</button>
+  </div>
+</header>
+
+<main>
+  <div id="toast-container" aria-live="polite"></div>
+
+  <div id="board" role="grid" aria-label="Guess board"></div>
+
+  <div id="keyboard" role="group" aria-label="On-screen keyboard"></div>
+</main>
+
+<div id="clue-panel" class="hidden"></div>
+
+<!-- How to play modal -->
+<div class="modal-overlay hidden" id="help-modal">
+  <div class="modal">
+    <button class="modal-close" data-close="help-modal">&times;</button>
+    <h2>How to Play</h2>
+    <p>Guess the <strong>GULC WORDLE</strong> in 6 tries. Every answer is a Georgetown Law &mdash; or law school in general &mdash; term.</p>
+    <p>Each guess must be a real 5-letter word. Type it in and hit enter; if it's not in the dictionary, you'll be told to try again.</p>
+    <p>After each guess, the color of the tiles will show how close your guess was.</p>
+    <div class="example">
+      <div class="tile-row">
+        <div class="tile correct">T</div><div class="tile">O</div><div class="tile">R</div><div class="tile">T</div><div class="tile">S</div>
+      </div>
+      <p>The letter <strong>T</strong> is in the word and in the correct spot.</p>
+    </div>
+    <div class="example">
+      <div class="tile-row">
+        <div class="tile">B</div><div class="tile present">R</div><div class="tile">I</div><div class="tile">E</div><div class="tile">F</div>
+      </div>
+      <p>The letter <strong>R</strong> is in the word but in the wrong spot.</p>
+    </div>
+    <div class="example">
+      <div class="tile-row">
+        <div class="tile">C</div><div class="tile">O</div><div class="tile">U</div><div class="tile absent">R</div><div class="tile">T</div>
+      </div>
+      <p>The letter <strong>R</strong> is not in the word in any spot.</p>
+    </div>
+    <p class="modal-footnote">A new word is chosen daily. Use the &#8635; button any time for unlimited practice rounds.</p>
+  </div>
+</div>
+
+<!-- Stats modal -->
+<div class="modal-overlay hidden" id="stats-modal">
+  <div class="modal">
+    <button class="modal-close" data-close="stats-modal">&times;</button>
+    <h2>Statistics</h2>
+    <div class="stats-grid">
+      <div class="stat"><span id="stat-played">0</span><label>Played</label></div>
+      <div class="stat"><span id="stat-winpct">0</span><label>Win %</label></div>
+      <div class="stat"><span id="stat-streak">0</span><label>Streak</label></div>
+      <div class="stat"><span id="stat-maxstreak">0</span><label>Max Streak</label></div>
+    </div>
+    <h3>Guess Distribution</h3>
+    <div id="guess-distribution"></div>
+  </div>
+</div>
+
+<script src="js/valid-words.js"></script>
+<script src="js/answers.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
