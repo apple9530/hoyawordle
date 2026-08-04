@@ -453,9 +453,17 @@
   document.addEventListener("keydown", (e) => {
     if (document.querySelector(".modal-overlay:not(.hidden)")) return;
     const key = e.key.toLowerCase();
+    if (key !== "enter" && key !== "backspace" && !/^[a-z]$/.test(key)) return;
+    // A toolbar/keyboard button can still hold focus from a previous click (e.g. "New
+    // practice word"). Without this, pressing Enter both submits the guess AND re-fires
+    // that focused button's native click-on-Enter behavior, wiping the board we just filled.
+    if (document.activeElement instanceof HTMLButtonElement) {
+      document.activeElement.blur();
+    }
+    e.preventDefault();
     if (key === "enter") handleKey("enter");
     else if (key === "backspace") handleKey("back");
-    else if (/^[a-z]$/.test(key)) handleKey(key);
+    else handleKey(key);
   });
 
   function startGame(newState) {
