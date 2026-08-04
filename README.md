@@ -22,9 +22,23 @@ No build step, no dependencies. Either:
   words, each with a short clue revealed at the end of the round. Every
   answer word is also a member of the dictionary above.
 - **`js/game.js`** — game logic: board/keyboard rendering, guess evaluation,
-  daily word selection (deterministic by date, same word for everyone each
-  day), a practice mode (the &#8635; button, unlimited random rounds not
-  counted in stats), and localStorage-backed stats/streaks.
+  daily word selection, a practice mode (the &#8635; button, unlimited random
+  rounds not counted in stats), and localStorage-backed stats/streaks.
+
+## Daily word & sharing
+
+- The word rotates once every 24 hours at **midnight Eastern (DC time)** —
+  every player gets the same word on the same calendar day, regardless of
+  their own local time zone. A live countdown ("New Hoya Wordle in HH:MM:SS")
+  is shown under the header, in the end-of-round panel, and in the Statistics
+  modal, and the puzzle auto-refreshes the moment a new day starts.
+- Each daily puzzle is numbered (`Hoya Wordle #N`, counted from a fixed
+  epoch). After finishing the daily round, a **Share Results** button
+  (in the end-of-round panel and in Statistics) copies a Wordle-style emoji
+  grid — e.g. `Hoya Wordle #947 3/6` plus 🟩🟨⬛ rows — to the clipboard (or
+  opens the native share sheet on supporting devices), with no spoilers.
+- Practice rounds are unlimited and never touch the daily save, stats, or
+  puzzle number, so starting one can't clobber today's completed result.
 
 ## Customizing the word list
 

@@ -117,6 +117,26 @@ body {
 }
 .icon-btn:hover { background: rgba(255,255,255,0.15); }
 
+#countdown-bar {
+  width: 100%;
+  max-width: 500px;
+  text-align: center;
+  padding: 8px 16px;
+  font-size: 0.8rem;
+  color: var(--gu-gray);
+  border-bottom: 1px solid var(--tile-border);
+}
+
+#countdown-bar .countdown-value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+#countdown-bar .countdown-note {
+  opacity: 0.8;
+}
+
 main {
   width: 100%;
   max-width: 500px;
@@ -264,6 +284,58 @@ main {
 #clue-panel h3 {
   margin: 0 0 6px;
   color: var(--gu-navy);
+}
+
+.clue-footer {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--tile-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.share-btn {
+  background: var(--gu-navy);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.share-btn:hover { opacity: 0.9; }
+.share-btn:active { transform: scale(0.97); }
+
+.stats-footer {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--tile-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.countdown-block {
+  display: flex;
+  flex-direction: column;
+}
+.countdown-block label {
+  font-size: 0.7rem;
+  color: var(--gu-gray);
+  letter-spacing: 0.05em;
+}
+.countdown-block .countdown-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 @media (prefers-color-scheme: dark) {

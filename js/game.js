@@ -10,21 +10,66 @@
   const VALID_SET = new Set(VALID_WORDS); // full dictionary used to validate guesses
   ANSWER_WORDS.forEach((w) => VALID_SET.add(w.toLowerCase())); // belt & suspenders
 
-  const EPOCH = Date.UTC(2024, 0, 1); // arbitrary fixed epoch for daily word rotation
+  const EPOCH = Date.UTC(2024, 0, 1); // arbitrary fixed epoch for daily word rotation & puzzle numbering
+  const DC_TZ = "America/New_York"; // the word rotates at midnight Eastern (DC time), for every player
+
+  // Reads a Date's wall-clock date/time as it appears in a given IANA time zone.
+  function zonedParts(date, timeZone) {
+    const fmt = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    });
+    const parts = {};
+    fmt.formatToParts(date).forEach((p) => {
+      if (p.type !== "literal") parts[p.type] = parseInt(p.value, 10);
+    });
+    if (parts.hour === 24) parts.hour = 0;
+    return parts;
+  }
+
+  function dcDateKey(date) {
+    const p = zonedParts(date || new Date(), DC_TZ);
+    return `${p.year}-${p.month}-${p.day}`;
+  }
+
+  // Number of whole DC calendar days since EPOCH. Rolls over exactly at DC midnight
+  // for every visitor, regardless of their own local time zone.
+  function dcDayIndex(date) {
+    const p = zonedParts(date || new Date(), DC_TZ);
+    const asUTCms = Date.UTC(p.year, p.month - 1, p.day);
+    return Math.floor((asUTCms - EPOCH) / 86400000);
+  }
 
   function dailyIndex() {
-    const now = new Date();
-    const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
-    const days = Math.floor((today - EPOCH) / 86400000);
+    const days = dcDayIndex();
     return ((days % ANSWER_WORDS.length) + ANSWER_WORDS.length) % ANSWER_WORDS.length;
   }
 
-  function todayKey() {
-    const now = new Date();
-    return `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+  function dailyPuzzleNumber() {
+    return dcDayIndex() + 1;
   }
 
-  /** @typedef {{mode:'daily'|'practice', answer:string, guesses:string[], statuses:string[][], keyStatuses:Object, done:boolean, won:boolean, dateKey:string}} GameState */
+  function msUntilNextDcMidnight() {
+    const p = zonedParts(new Date(), DC_TZ);
+    const secondsSinceMidnight = p.hour * 3600 + p.minute * 60 + p.second;
+    return (86400 - secondsSinceMidnight) * 1000;
+  }
+
+  function formatCountdown(ms) {
+    const total = Math.max(0, Math.floor(ms / 1000));
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const s = total % 60;
+    return [h, m, s].map((n) => String(n).padStart(2, "0")).join(":");
+  }
+
+  /** @typedef {{mode:'daily'|'practice', answer:string, puzzleNumber:number, guesses:string[], statuses:string[][], keyStatuses:Object, done:boolean, won:boolean, dateKey:string}} GameState */
 
   /** @type {GameState} */
   let state = null;
@@ -56,7 +101,10 @@
     localStorage.setItem(statsKey(), JSON.stringify(stats));
   }
 
+  // Only the daily game is persisted — starting a practice round must never clobber
+  // today's saved daily result, since stats/share both read it back later.
   function saveState() {
+    if (state.mode !== "daily") return;
     try {
       localStorage.setItem(storageKey(), JSON.stringify(state));
     } catch (e) {}
@@ -67,9 +115,22 @@
       const raw = localStorage.getItem(storageKey());
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (parsed.mode === "daily" && parsed.dateKey === todayKey()) {
+        if (parsed.mode === "daily" && parsed.dateKey === dcDateKey()) {
           return parsed;
         }
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  // Returns today's saved daily result even while a practice round is active in memory.
+  function getDailyRecord() {
+    if (state && state.mode === "daily") return state;
+    try {
+      const raw = localStorage.getItem(storageKey());
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.mode === "daily" && parsed.dateKey === dcDateKey()) return parsed;
       }
     } catch (e) {}
     return null;
@@ -79,12 +140,13 @@
     return {
       mode: "daily",
       answer: ANSWER_WORDS[dailyIndex()].toLowerCase(),
+      puzzleNumber: dailyPuzzleNumber(),
       guesses: [],
       statuses: [],
       keyStatuses: {},
       done: false,
       won: false,
-      dateKey: todayKey(),
+      dateKey: dcDateKey(),
     };
   }
 
@@ -93,12 +155,13 @@
     return {
       mode: "practice",
       answer,
+      puzzleNumber: null,
       guesses: [],
       statuses: [],
       keyStatuses: {},
       done: false,
       won: false,
-      dateKey: todayKey(),
+      dateKey: dcDateKey(),
     };
   }
 
@@ -233,11 +296,75 @@
     }
   }
 
+  function emojiGrid(statuses) {
+    return statuses
+      .map((row) =>
+        row.map((s) => (s === "correct" ? "🟩" : s === "present" ? "🟨" : "⬛")).join("")
+      )
+      .join("\n");
+  }
+
+  function buildShareText(record) {
+    const result = record.won ? `${record.guesses.length}/${MAX_GUESSES}` : `X/${MAX_GUESSES}`;
+    const header = `Hoya Wordle #${record.puzzleNumber} ${result}`;
+    return `${header}\n\n${emojiGrid(record.statuses)}`;
+  }
+
+  function fallbackCopy(text) {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand("copy");
+      showToast("Copied results to clipboard!");
+    } catch (e) {
+      showToast("Could not copy — please copy manually");
+    }
+    document.body.removeChild(ta);
+  }
+
+  function shareResults() {
+    const record = getDailyRecord();
+    if (!record || !record.done) {
+      showToast("Finish today's Hoya Wordle to share your results!", 2200);
+      return;
+    }
+    const text = buildShareText(record);
+    if (navigator.share) {
+      navigator.share({ text }).catch(() => {});
+      return;
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(
+        () => showToast("Copied results to clipboard!"),
+        () => fallbackCopy(text)
+      );
+    } else {
+      fallbackCopy(text);
+    }
+  }
+
   function showClue(reveal) {
     const word = state.answer.toUpperCase();
     const clue = ANSWERS[word];
     cluePanel.classList.remove("hidden");
-    cluePanel.innerHTML = `<h3>${reveal ? "The word was " + word : word}</h3><p>${clue}</p>`;
+    const title =
+      state.mode === "daily"
+        ? `Hoya Wordle #${state.puzzleNumber}${reveal ? " — the word was " + word : ""}`
+        : reveal
+        ? "The word was " + word
+        : word;
+    const shareBlock =
+      state.mode === "daily"
+        ? `<div class="clue-footer">
+             <span class="countdown-value" id="clue-countdown">--:--:--</span>
+             <button class="share-btn" id="share-btn-clue" type="button">Share Results 📤</button>
+           </div>`
+        : "";
+    cluePanel.innerHTML = `<h3>${title}</h3><p>${clue}</p>${shareBlock}`;
   }
 
   function endGame(won) {
@@ -359,10 +486,12 @@
     const distEl = document.getElementById("guess-distribution");
     distEl.innerHTML = "";
     const max = Math.max(1, ...stats.distribution);
+    const dailyRecord = getDailyRecord();
     stats.distribution.forEach((count, i) => {
       const row = document.createElement("div");
       row.className = "dist-row";
-      const isCurrent = state.mode === "daily" && state.done && state.won && state.guesses.length - 1 === i;
+      const isCurrent =
+        dailyRecord && dailyRecord.done && dailyRecord.won && dailyRecord.guesses.length - 1 === i;
       row.innerHTML = `<span class="dist-num">${i + 1}</span><div class="dist-bar-wrap"><div class="dist-bar${
         isCurrent ? " current" : ""
       }" style="width:${(count / max) * 100}%">${count}</div></div>`;
@@ -392,6 +521,27 @@
       startGame(newPracticeState());
       showToast("New practice word! (progress not tracked in stats)", 2200);
     });
+
+    // Share buttons are (re)created dynamically, so use delegated listeners.
+    cluePanel.addEventListener("click", (e) => {
+      if (e.target.closest("#share-btn-clue")) shareResults();
+    });
+    document.getElementById("stats-modal").addEventListener("click", (e) => {
+      if (e.target.closest("#share-btn-stats")) shareResults();
+    });
+  }
+
+  function tickCountdown() {
+    const text = formatCountdown(msUntilNextDcMidnight());
+    document.querySelectorAll(".countdown-value").forEach((el) => (el.textContent = text));
+  }
+
+  function checkForNewDailyWord() {
+    const freshKey = dcDateKey();
+    if (state && state.mode === "daily" && state.dateKey !== freshKey) {
+      startGame(newDailyState());
+      showToast("Today's new Hoya Wordle is here!", 2400);
+    }
   }
 
   function init() {
@@ -402,6 +552,11 @@
       // first-time visitor: show help automatically
       document.getElementById("help-modal").classList.remove("hidden");
     }
+    tickCountdown();
+    setInterval(() => {
+      tickCountdown();
+      checkForNewDailyWord();
+    }, 1000);
   }
 
   init();

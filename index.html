@@ -16,6 +16,11 @@
   </div>
 </header>
 
+<div id="countdown-bar">
+  New Hoya Wordle in <span class="countdown-value" id="header-countdown">--:--:--</span>
+  <span class="countdown-note">(midnight, DC time)</span>
+</div>
+
 <main>
   <div id="toast-container" aria-live="polite"></div>
 
@@ -69,6 +74,13 @@
     </div>
     <h3>Guess Distribution</h3>
     <div id="guess-distribution"></div>
+    <div class="stats-footer">
+      <div class="countdown-block">
+        <label>NEXT HOYA WORDLE</label>
+        <span class="countdown-value" id="stats-countdown">--:--:--</span>
+      </div>
+      <button class="share-btn" id="share-btn-stats" type="button">Share 📤</button>
+    </div>
   </div>
 </div>
 
