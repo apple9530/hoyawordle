@@ -51,6 +51,5 @@ const ANSWERS = {
   "JURIS": "First syllables of the degree GULC grants: ___ Doctor.",
   "ESTOP": "To bar someone from asserting a claim, per estoppel.",
   "BYLAW": "An internal rule of an organization or corporation.",
-  "VOTES": "What a panel of judges casts to decide a case.",
-  "NADIA"; "A friend, who is also a friend's fiance, and whose fiance is a friend."
+  "VOTES": "What a panel of judges casts to decide a case."
 };
