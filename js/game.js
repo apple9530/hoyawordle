@@ -304,10 +304,12 @@
       .join("\n");
   }
 
+  const GAME_URL = "apple9530.github.io/hoyawordle";
+
   function buildShareText(record) {
     const result = record.won ? `${record.guesses.length}/${MAX_GUESSES}` : `X/${MAX_GUESSES}`;
     const header = `Hoya Wordle #${record.puzzleNumber} ${result}`;
-    return `${header}\n\n${emojiGrid(record.statuses)}`;
+    return `${header}\n\n${emojiGrid(record.statuses)}\n\n${GAME_URL}`;
   }
 
   function fallbackCopy(text) {
